@@ -15,18 +15,50 @@
         body {
             font-family: 'Arial', 'Segoe UI', sans-serif;
             background: #f0f0f0;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Running text marquee */
+        .running-text-container {
+            background: linear-gradient(90deg, #00CED1, #00ACC1);
+            color: white;
+            padding: 8px 0;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .running-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 30s linear infinite;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(-100%, 0);
+            }
         }
 
         .header {
             background: white;
-            padding: 15px 30px;
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
         }
 
         .header-left {
@@ -36,8 +68,8 @@
         }
 
         .logo {
-            height: 60px;
-            width: 60px;
+            height: 50px;
+            width: 50px;
             object-fit: contain;
         }
 
@@ -47,7 +79,7 @@
         }
 
         .welcome-text {
-            color: #00CED1;
+            color: #f80d0d;
             font-size: 32px;
             font-weight: bold;
             letter-spacing: 1px;
@@ -56,7 +88,7 @@
         .address {
             color: #666;
             font-size: 14px;
-            margin-top: 5px;
+            margin-top: 3px;
         }
 
         .datetime {
@@ -65,7 +97,7 @@
 
         .time {
             color: #FF0000;
-            font-size: 36px;
+            font-size: 28px;
             font-weight: bold;
             font-family: 'Digital', monospace;
         }
@@ -78,30 +110,41 @@
 
         .container {
             flex: 1;
-            padding: 20px;
+            padding: 10px;
+            display: grid;
+            grid-template-rows: 45% 55%; /* Cuci gets 45%, Detailing gets 55% */
+            gap: 10px;
+            overflow: hidden;
+            height: calc(100vh - 180px); /* Adjust based on header and running text height */
         }
 
         .section {
             background: white;
             border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Important for flex children */
+            overflow: hidden;
         }
 
         .section-header {
             background: #FF0000;
             color: white;
-            padding: 10px 20px;
+            padding: 8px 20px;
             border-radius: 5px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
         }
 
         .queue-grid {
             display: grid;
-            gap: 15px;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
         }
 
         .cuci-grid {
@@ -109,50 +152,74 @@
         }
 
         .detailing-grid {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(3, 1.3fr);
         }
 
         .queue-column {
             background: #f8f8f8;
             border-radius: 8px;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
         .column-header {
-            padding: 12px;
+            padding: 10px;
             text-align: center;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #333;
             border-bottom: 3px solid #00CED1;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .column-header i {
-            font-size: 20px;
+            font-size: 18px;
             color: #00CED1;
         }
 
         .queue-list {
-            padding: 10px;
-            min-height: 400px;
-            max-height: 600px;
+            padding: 8px;
+            flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
         }
+        
+        /* Special styling for detailing queues */
+        .detailing-grid .queue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px;
+        }
+        
+        .detailing-grid .queue-item {
+            flex: 0 0 auto;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        
+        /* Remove limit for detailing queue - let it scroll */
+        .detailing-grid .queue-item {
+            display: flex;
+        }
+        
 
         .queue-item {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 12px;
-            margin-bottom: 10px;
+            gap: 8px;
+            padding: 6px;
+            margin-bottom: 6px;
             background: white;
-            border-radius: 8px;
+            border-radius: 6px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
             transition: all 0.3s ease;
+            flex-shrink: 0;
         }
 
         .queue-item:hover {
@@ -163,11 +230,11 @@
         .queue-number {
             background: #00CED1;
             color: white;
-            padding: 10px 15px;
+            padding: 6px 10px;
             border-radius: 5px;
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
-            min-width: 80px;
+            min-width: 60px;
             text-align: center;
         }
 
@@ -177,10 +244,12 @@
         }
 
         .plate-number {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             color: #333;
             flex: 1;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .empty-state {
@@ -244,10 +313,14 @@
             animation: slideIn 0.5s ease;
         }
 
-        /* Responsive */
+        /* Responsive - maintain single screen view */
         @media (max-width: 1200px) {
             .cuci-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .detailing-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
             
             .welcome-text {
@@ -255,47 +328,105 @@
             }
             
             .time {
-                font-size: 28px;
+                font-size: 24px;
+            }
+            
+            .container {
+                padding: 8px;
+                grid-template-rows: 45% 55%;
+            }
+            
+            .section {
+                padding: 8px;
+            }
+            
+            .queue-item {
+                padding: 5px;
+            }
+            
+            .plate-number {
+                font-size: 16px;
             }
         }
 
         @media (max-width: 768px) {
             .header {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
+                padding: 8px 10px;
+                gap: 10px;
             }
             
             .header-left {
-                flex-direction: column;
+                gap: 10px;
             }
             
-            .cuci-grid,
+            .logo {
+                height: 40px;
+                width: 40px;
+            }
+            
+            .cuci-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
             .detailing-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .container {
+                grid-template-rows: 50% 50%; /* Equal space on mobile */
             }
             
             .welcome-text {
                 font-size: 20px;
             }
             
-            .time {
-                font-size: 24px;
+            .address {
+                font-size: 12px;
             }
             
-            .queue-list {
-                min-height: 200px;
+            .time {
+                font-size: 20px;
+            }
+            
+            .queue-item {
+                padding: 6px;
+                margin-bottom: 6px;
+            }
+            
+            .queue-number {
+                font-size: 14px;
+                padding: 6px 10px;
+                min-width: 60px;
+            }
+            
+            .plate-number {
+                font-size: 16px;
+            }
+            
+            .section-header {
+                font-size: 14px;
+                padding: 6px 15px;
+            }
+            
+            .column-header {
+                font-size: 12px;
+                padding: 8px;
             }
         }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+    <!-- Running Text -->
+    <div class="running-text-container">
+        <span class="running-text" id="runningText">Selamat Datang di JS Carwash - Jl. Raya Perumnas No.235, Sukaluyu, Teluk Jambe Timur, Karawang - Layanan Cuci Mobil & Detailing Profesional - Buka Setiap Hari 08:00 - 17:00 WIB</span>
+    </div>
+    
     <div class="header">
         <div class="header-left">
             <img src="logo.png" alt="JS Carwash Logo" class="logo">
             <div class="header-title">
-                <div class="welcome-text">WELLCOME TO JS CARWASH</div>
+                <div class="welcome-text">JASUTRA CARWASH</div>
                 <div class="address">Jl. Raya Perumnas No.235, Sukaluyu, Telukjambe Timur, Karawang, Jawa Barat 41361</div>
             </div>
         </div>
@@ -308,42 +439,38 @@
     <div class="container">
         <!-- Section Cuci -->
         <div class="section">
-            <div class="section-header">ANTRIAN CUCI</div>
+            <div class="section-header">CUCI</div>
             <div class="queue-grid cuci-grid">
                 <div class="queue-column">
                     <div class="column-header">
                         <i class="fas fa-car"></i>
-                        <span>Masuk Antrian</span>
+                        <span>ANTRIAN</span>
                     </div>
                     <div id="cuci-waiting" class="queue-list">
-                        <div class="empty-state">Tidak ada antrian</div>
                     </div>
                 </div>
                 <div class="queue-column">
                     <div class="column-header">
                         <i class="fas fa-shower"></i>
-                        <span>Cuci</span>
+                        <span>CUCI</span>
                     </div>
                     <div id="cuci-washing" class="queue-list">
-                        <div class="empty-state">Tidak ada antrian</div>
                     </div>
                 </div>
                 <div class="queue-column">
                     <div class="column-header">
                         <i class="fas fa-wind"></i>
-                        <span>Pengeringan</span>
+                        <span>PENGERINGAN</span>
                     </div>
                     <div id="cuci-drying" class="queue-list">
-                        <div class="empty-state">Tidak ada antrian</div>
                     </div>
                 </div>
                 <div class="queue-column">
                     <div class="column-header">
                         <i class="fas fa-check-circle"></i>
-                        <span>Selesai</span>
+                        <span>SELESAI</span>
                     </div>
                     <div id="cuci-completed" class="queue-list">
-                        <div class="empty-state">Tidak ada antrian</div>
                     </div>
                 </div>
             </div>
@@ -351,7 +478,7 @@
 
         <!-- Section Detailing -->
         <div class="section">
-            <div class="section-header">ANTRIAN DETAILING</div>
+            <div class="section-header">DETAILING</div>
             <div class="queue-grid detailing-grid">
                 <div class="queue-column">
                     <div class="column-header">
@@ -359,7 +486,6 @@
                         <span>Masuk Antrian</span>
                     </div>
                     <div id="detailing-waiting" class="queue-list">
-                        <div class="empty-state">Tidak ada antrian</div>
                     </div>
                 </div>
                 <div class="queue-column">
@@ -368,7 +494,6 @@
                         <span>Detailing</span>
                     </div>
                     <div id="detailing-process" class="queue-list">
-                        <div class="empty-state">Tidak ada antrian</div>
                     </div>
                 </div>
                 <div class="queue-column">
@@ -377,7 +502,6 @@
                         <span>Selesai</span>
                     </div>
                     <div id="detailing-completed" class="queue-list">
-                        <div class="empty-state">Tidak ada antrian</div>
                     </div>
                 </div>
             </div>
@@ -421,7 +545,7 @@
             // Clear all queue lists
             const lists = document.querySelectorAll('.queue-list');
             lists.forEach(list => {
-                list.innerHTML = '<div class="empty-state">Tidak ada antrian</div>';
+                list.innerHTML = '';
             });
 
             // Process cuci queues
@@ -446,7 +570,7 @@
                 }
             });
 
-            // Process detailing queues
+            // Process detailing queues without limit
             data.detailing.forEach(vehicle => {
                 let targetId;
                 switch(vehicle.status) {
@@ -464,6 +588,7 @@
                     addQueueItem(targetId, vehicle, 'detailing');
                 }
             });
+            
         }
 
         // Add queue item to display
@@ -472,10 +597,6 @@
             
             if (!container) return;
             
-            const emptyState = container.querySelector('.empty-state');
-            if (emptyState) {
-                container.innerHTML = '';
-            }
 
             const item = document.createElement('div');
             item.className = `queue-item ${serviceType}`;
@@ -496,8 +617,25 @@
             loadQueues();
         });
 
+        // Load running text from API
+        async function loadRunningText() {
+            try {
+                const response = await fetch('/api/queue/running-text');
+                const data = await response.json();
+                document.getElementById('runningText').textContent = data.text;
+            } catch (error) {
+                console.error('Error loading running text:', error);
+            }
+        }
+
+        // Socket listener for running text updates
+        socket.on('runningTextUpdate', (data) => {
+            document.getElementById('runningText').textContent = data.text;
+        });
+
         // Initial load
         loadQueues();
+        loadRunningText();
 
         // Refresh every 30 seconds as backup
         setInterval(() => {

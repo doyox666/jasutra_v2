@@ -428,6 +428,18 @@
             margin-top: 20px;
             font-size: 0.9em;
         }
+        
+        /* Style for action buttons in queue management */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .action-buttons .btn-danger {
+            margin-left: 5px;
+        }
 
         @media print {
             body * {
@@ -946,6 +958,16 @@
                                 <button class="btn btn-sm btn-info" onclick="reprintReceipt(${JSON.stringify(vehicle).replace(/"/g, '&quot;')})">
                                     <i class="fas fa-print"></i> Cetak
                                 </button>
+                                ${vehicle.service_type === 'cuci' && vehicle.status !== 'completed' ? `
+                                    <button class="btn btn-sm btn-warning" onclick="moveToDetailing(${vehicle.id}, '${vehicle.queue_number}', '${vehicle.plate_number}')">
+                                        <i class="fas fa-exchange-alt"></i> Pindah ke Detailing
+                                    </button>
+                                ` : ''}
+                                ${vehicle.status === 'completed' ? `
+                                    <button class="btn btn-sm btn-danger" onclick="deleteVehicle(${vehicle.id}, '${vehicle.queue_number}', '${vehicle.plate_number}')">
+                                        <i class="fas fa-trash"></i> Hapus
+                                    </button>
+                                ` : ''}
                             </div>
                         </td>
                     `;
@@ -1022,6 +1044,71 @@
             } catch (error) {
                 console.error('Error updating status:', error);
                 alert('Error updating status');
+            }
+        }
+
+        // Move vehicle to detailing
+        async function moveToDetailing(vehicleId, queueNumber, plateNumber) {
+            if (!confirm(`Apakah Anda yakin ingin memindahkan ${queueNumber} (${plateNumber}) ke antrian Detailing?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/vehicles/${vehicleId}/move-to-detailing`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success notification
+                    showNotification(`Kendaraan ${queueNumber} berhasil dipindahkan ke antrian Detailing!`, 'success');
+                    
+                    // Reload appropriate section
+                    if (currentSection === 'queue') {
+                        loadRegistered();
+                    } else if (currentSection === 'dashboard') {
+                        loadDashboard();
+                    }
+                } else {
+                    alert('Error: ' + (result.error || 'Gagal memindahkan ke detailing'));
+                }
+            } catch (error) {
+                console.error('Error moving to detailing:', error);
+                alert('Error memindahkan ke detailing');
+            }
+        }
+
+        // Delete vehicle (only for completed vehicles)
+        async function deleteVehicle(vehicleId, queueNumber, plateNumber) {
+            if (!confirm(`Apakah Anda yakin ingin menghapus antrian ${queueNumber} (${plateNumber}) dari kolom selesai?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/vehicles/${vehicleId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success notification
+                    showNotification('Antrian berhasil dihapus dari kolom selesai!', 'success');
+                    
+                    // Reload appropriate section
+                    if (currentSection === 'queue') {
+                        loadRegistered();
+                    } else if (currentSection === 'dashboard') {
+                        loadDashboard();
+                    }
+                } else {
+                    alert('Error: ' + (result.error || 'Gagal menghapus antrian'));
+                }
+            } catch (error) {
+                console.error('Error deleting vehicle:', error);
+                alert('Error menghapus antrian');
             }
         }
 

@@ -10,7 +10,12 @@ module.exports = (io) => {
     const query = `
       SELECT * FROM vehicles 
       WHERE DATE(created_at) = DATE('now')
-      ORDER BY queue_number DESC
+      ORDER BY 
+        CASE 
+          WHEN status = 'completed' THEN completed_at
+          ELSE created_at
+        END ASC,
+        queue_number ASC
     `;
     
     db.all(query, [], (err, rows) => {
@@ -45,7 +50,12 @@ module.exports = (io) => {
       query += ` AND DATE(created_at) = DATE('now')`;
     }
     
-    query += ` ORDER BY queue_number DESC`;
+    query += ` ORDER BY 
+      CASE 
+        WHEN status = 'completed' THEN completed_at
+        ELSE created_at
+      END ASC,
+      queue_number ASC`;
     
     db.all(query, params, (err, rows) => {
       if (err) {
@@ -56,7 +66,7 @@ module.exports = (io) => {
     });
   });
 
-  // Delete vehicle
+  // Delete vehicle (only completed vehicles can be deleted)
   router.delete('/vehicles/:id', (req, res) => {
     const { id } = req.params;
     
@@ -64,17 +74,64 @@ module.exports = (io) => {
       if (err) {
         res.status(500).json({ error: err.message });
       } else if (!vehicle) {
-        res.status(404).json({ error: 'Vehicle not found' });
+        res.status(404).json({ error: 'Kendaraan tidak ditemukan' });
+      } else if (vehicle.status !== 'completed') {
+        // Only allow deletion of completed vehicles
+        res.status(400).json({ error: 'Hanya kendaraan yang sudah selesai yang dapat dihapus' });
       } else {
         db.run(`DELETE FROM vehicles WHERE id = ?`, [id], function(err) {
           if (err) {
             res.status(500).json({ error: err.message });
           } else {
-            logActivity(id, 'DELETED', `Vehicle ${vehicle.plate_number} deleted from system`);
+            logActivity(id, 'DELETED', `Kendaraan ${vehicle.plate_number} (${vehicle.queue_number}) dihapus dari kolom selesai`);
             io.emit('queueUpdate', { action: 'deleted', vehicleId: id });
-            res.json({ success: true, message: 'Vehicle deleted successfully' });
+            res.json({ success: true, message: 'Kendaraan berhasil dihapus dari kolom selesai' });
           }
         });
+      }
+    });
+  });
+
+  // Move vehicle from cuci to detailing
+  router.put('/vehicles/:id/move-to-detailing', (req, res) => {
+    const { id } = req.params;
+    
+    db.get(`SELECT * FROM vehicles WHERE id = ?`, [id], async (err, vehicle) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else if (!vehicle) {
+        res.status(404).json({ error: 'Kendaraan tidak ditemukan' });
+      } else if (vehicle.service_type !== 'cuci') {
+        res.status(400).json({ error: 'Hanya kendaraan dengan layanan cuci yang dapat dipindahkan' });
+      } else if (vehicle.status === 'completed') {
+        res.status(400).json({ error: 'Kendaraan yang sudah selesai tidak dapat dipindahkan' });
+      } else {
+        try {
+          // Get new queue number for detailing
+          const { getNextQueueNumber } = require('../database');
+          const newQueueNumber = await getNextQueueNumber('detailing');
+          
+          // Update vehicle to detailing service with new queue number and reset status to waiting
+          db.run(
+            `UPDATE vehicles SET service_type = ?, queue_number = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            ['detailing', newQueueNumber, 'waiting', id],
+            function(updateErr) {
+              if (updateErr) {
+                res.status(500).json({ error: updateErr.message });
+              } else {
+                logActivity(id, 'MOVED_TO_DETAILING', `Kendaraan ${vehicle.plate_number} dipindahkan dari Cuci (${vehicle.queue_number}) ke Detailing (${newQueueNumber})`);
+                io.emit('queueUpdate', { action: 'moved_to_detailing', vehicleId: id });
+                res.json({ 
+                  success: true, 
+                  message: 'Kendaraan berhasil dipindahkan ke antrian detailing',
+                  newQueueNumber: newQueueNumber
+                });
+              }
+            }
+          );
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
       }
     });
   });

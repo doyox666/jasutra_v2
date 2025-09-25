@@ -10,7 +10,12 @@ module.exports = (io) => {
     const query = `
       SELECT * FROM vehicles 
       WHERE DATE(created_at) = DATE('now')
-      ORDER BY queue_number ASC
+      ORDER BY 
+        CASE 
+          WHEN status = 'completed' THEN completed_at
+          ELSE created_at
+        END ASC,
+        queue_number ASC
     `;
     
     db.all(query, [], (err, rows) => {
