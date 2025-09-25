@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Carwash - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            width: 250px;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h2 {
+            color: white;
+            font-size: 1.5em;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 20px 0;
+            flex: 1;
+        }
+
+        .btn-display-view {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-display-view:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-display-view i {
+            font-size: 1.2em;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: white;
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn i {
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
+        }
+
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 0.9em;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .badge-waiting {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-washing {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .badge-drying {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .badge-detailing {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .badge-completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+
+        .form-control-sm {
+            height: 32px;
+            font-size: 0.875rem;
+            padding: 5px 10px;
+        }
+
+        .form-control-sm option {
+            padding: 5px;
+        }
+
+        .form-control-sm:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .print-receipt {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: white;
+            border: 1px dashed #000;
+            margin: 20px auto;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .receipt-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .receipt-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .receipt-footer {
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-receipt, .print-receipt * {
+                visibility: visible;
+            }
+            .print-receipt {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-car-side"></i> JS CARWASH</h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" data-section="dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </li>
+            <li class="nav-item" data-section="registration">
+                <i class="fas fa-plus-circle"></i> Pendaftaran
+            </li>
+            <li class="nav-item" data-section="queue">
+                <i class="fas fa-car"></i> Kelola Antrian
+            </li>
+            <li class="nav-item" data-section="report">
+                <i class="fas fa-chart-bar"></i> Report
+            </li>
+            <li class="nav-item" data-section="activity">
+                <i class="fas fa-history"></i> Activity Log
+            </li>
+            <li class="nav-item" data-section="settings">
+                <i class="fas fa-cog"></i> Settings
+            </li>
+        </ul>
+        <div style="padding: 20px; margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            <a href="/" target="_blank" class="btn-display-view">
+                <i class="fas fa-desktop"></i> Tampilan Pengunjung
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="content-section active">
+            <div class="header">
+                <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                <div>
+                    <i class="far fa-clock"></i> <span id="currentDateTime"></span>
+                </div>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-calendar-day" style="color: #667eea; font-size: 2em;"></i></div>
+                    <div class="stat-label">Total Hari Ini</div>
+                    <div class="stat-value" id="stat-today">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-check-circle" style="color: #28a745; font-size: 2em;"></i></div>
+                    <div class="stat-label">Selesai</div>
+                    <div class="stat-value" id="stat-completed">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-clock" style="color: #ffc107; font-size: 2em;"></i></div>
+                    <div class="stat-label">Menunggu</div>
+                    <div class="stat-value" id="stat-waiting">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-spinner fa-pulse" style="color: #17a2b8; font-size: 2em;"></i></div>
+                    <div class="stat-label">Dalam Proses</div>
+                    <div class="stat-value" id="stat-progress">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-list"></i> Antrian Aktif Hari Ini</h3>
+                <table class="table" id="todayQueueTable">
+                    <thead>
+                        <tr>
+                            <th>No. Antrian</th>
+                            <th>Plat Nomor</th>
+                            <th>Jenis</th>
+                            <th>Status</th>
+                            <th>Waktu Masuk</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Registration Section -->
+        <div id="registration" class="content-section">
+            <div class="header">
+                <h1><i class="fas fa-plus-circle"></i> Pendaftaran Kendaraan</h1>
+            </div>
+
+            <div class="card">
+                <form id="registrationForm">
+                    <div class="form-group">
+                        <label for="plateNumber">Plat Nomor *</label>
+                        <input type="text" class="form-control" id="plateNumber" required 
+                               placeholder="Contoh: B 1234 ABC" style="text-transform: uppercase;">
+                    </div>
+                    <div class="form-group">
+                        <label for="serviceType">Jenis Layanan *</label>
+                        <select class="form-control" id="serviceType" required>
+                            <option value="">-- Pilih Layanan --</option>
+                            <option value="cuci">Cuci Mobil</option>
+                            <option value="detailing">Detailing</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Daftarkan Kendaraan & Cetak Struk
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Queue Management Section -->
+        <div id="queue" class="content-section">
+            <div class="header">
+                <h1><i class="fas fa-car"></i> Kelola Antrian</h1>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-car-side"></i> Kendaraan Terdaftar Hari Ini</h3>
+                <table class="table" id="registeredTable">
+                    <thead>
+                        <tr>
+                            <th>No. Antrian</th>
+                            <th>Plat Nomor</th>
+                            <th>Jenis</th>
+                            <th>Status Saat Ini</th>
+                            <th style="min-width: 250px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Report Section -->
+        <div id="report" class="content-section">
+            <div class="header">
+                <h1><i class="fas fa-chart-bar"></i> Report</h1>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-filter"></i> Filter Report</h3>
+                <form id="reportForm">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="form-group">
+                            <label for="reportStartDate">Tanggal Mulai</label>
+                            <input type="date" class="form-control" id="reportStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="reportEndDate">Tanggal Akhir</label>
+                            <input type="date" class="form-control" id="reportEndDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="reportServiceType">Jenis Layanan</label>
+                            <select class="form-control" id="reportServiceType">
+                                <option value="all">Semua</option>
+                                <option value="cuci">Cuci Mobil</option>
+                                <option value="detailing">Detailing</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Tampilkan Report
+                        </button>
+                        <button type="button" class="btn btn-success" id="exportExcel">
+                            <i class="fas fa-file-excel"></i> Export ke Excel
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card" id="reportSummary" style="display: none;">
+                <h3><i class="fas fa-chart-pie"></i> Ringkasan Report</h3>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Kendaraan</div>
+                        <div class="stat-value" id="report-total">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Cuci Mobil</div>
+                        <div class="stat-value" id="report-cuci">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Detailing</div>
+                        <div class="stat-value" id="report-detailing">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Rata-rata Waktu</div>
+                        <div class="stat-value" id="report-avg-time">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="reportData" style="display: none;">
+                <h3><i class="fas fa-database"></i> Data Kendaraan</h3>
+                <table class="table" id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>No. Antrian</th>
+                            <th>Plat Nomor</th>
+                            <th>Jenis</th>
+                            <th>Status</th>
+                            <th>Waktu Masuk</th>
+                            <th>Waktu Selesai</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Activity Log Section -->
+        <div id="activity" class="content-section">
+            <div class="header">
+                <h1><i class="fas fa-history"></i> Activity Log</h1>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-stream"></i> Aktivitas Sistem</h3>
+                <table class="table" id="activityTable">
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Kendaraan</th>
+                            <th>Aksi</th>
+                            <th>Deskripsi</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-primary" id="loadMoreActivity">
+                        <i class="fas fa-plus"></i> Muat Lebih Banyak
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings" class="content-section">
+            <div class="header">
+                <h1><i class="fas fa-cog"></i> Settings</h1>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-scroll"></i> Running Text</h3>
+                <form id="runningTextForm">
+                    <div class="form-group">
+                        <label for="runningTextInput">Teks Berjalan</label>
+                        <textarea class="form-control" id="runningTextInput" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Update Running Text
+                    </button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-undo-alt"></i> Reset Nomor Antrian</h3>
+                <p style="color: #666; margin-bottom: 15px;">
+                    Nomor antrian akan otomatis reset setiap hari pukul 00:01. 
+                    Gunakan tombol di bawah untuk reset manual jika diperlukan.
+                </p>
+                <form id="resetQueueForm">
+                    <div class="form-group">
+                        <label for="resetPassword">Password Admin</label>
+                        <input type="password" class="form-control" id="resetPassword" 
+                               placeholder="Masukkan password untuk reset" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-redo"></i> Reset Nomor Antrian Sekarang
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Receipt Modal -->
+    <div id="printModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close-modal">&times;</span>
+                <h2 class="modal-title">Struk Antrian</h2>
+            </div>
+            <div id="printContent" class="print-receipt"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Cetak Struk
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentSection = 'dashboard';
+        let activityOffset = 0;
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const section = item.dataset.section;
+                showSection(section);
+            });
+        });
+
+        function showSection(section) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelectorAll('.content-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-section="${section}"]`).classList.add('active');
+            document.getElementById(section).classList.add('active');
+            currentSection = section;
+
+            // Load section data
+            if (section === 'dashboard') {
+                loadDashboard();
+            } else if (section === 'registration') {
+                // No need to load anything extra for registration
+            } else if (section === 'queue') {
+                loadRegistered(); // Load registered vehicles for queue management
+            } else if (section === 'activity') {
+                loadActivityLog();
+            } else if (section === 'settings') {
+                loadSettings();
+            }
+        }
+
+        // Update date/time
+        function updateDateTime() {
+            const now = new Date();
+            const dateTimeString = now.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentDateTime').textContent = dateTimeString;
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                // Load statistics
+                const statsResponse = await fetch('/api/admin/statistics');
+                const stats = await statsResponse.json();
+                
+                document.getElementById('stat-today').textContent = stats.today_total;
+                document.getElementById('stat-completed').textContent = stats.today_completed;
+                document.getElementById('stat-waiting').textContent = stats.today_waiting;
+                document.getElementById('stat-progress').textContent = stats.today_in_progress;
+
+                // Load today's vehicles
+                const vehiclesResponse = await fetch('/api/admin/vehicles/today');
+                const vehicles = await vehiclesResponse.json();
+                
+                const tbody = document.querySelector('#todayQueueTable tbody');
+                tbody.innerHTML = '';
+                
+                vehicles.forEach(vehicle => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${vehicle.queue_number}</td>
+                        <td>${vehicle.plate_number}</td>
+                        <td>${vehicle.service_type === 'cuci' ? 'Cuci Mobil' : 'Detailing'}</td>
+                        <td><span class="badge badge-${vehicle.status}">${getStatusText(vehicle.status)}</span></td>
+                        <td>${new Date(vehicle.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Registration Form
+        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const plateNumber = document.getElementById('plateNumber').value;
+            const serviceType = document.getElementById('serviceType').value;
+            
+            try {
+                const response = await fetch('/api/queue/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plate_number: plateNumber, service_type: serviceType })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show print modal
+                    showPrintReceipt(result.vehicle);
+                    
+                    // Clear form
+                    document.getElementById('registrationForm').reset();
+                    
+                    // Reload registered vehicles
+                    loadRegistered();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error registering vehicle:', error);
+                alert('Error registering vehicle');
+            }
+        });
+
+        // Show print receipt
+        function showPrintReceipt(vehicle) {
+            const printContent = document.getElementById('printContent');
+            const now = new Date();
+            printContent.innerHTML = `
+                <div class="receipt-header">
+                    JS CARWASH<br>
+                    Jl. Raya Perumnas No.235<br>
+                    Sukaluyu, Teluk Jambe Timur<br>
+                    Karawang
+                </div>
+                <hr>
+                <div class="receipt-number">
+                    ${vehicle.queue_number}
+                </div>
+                <div>
+                    Plat: ${vehicle.plate_number}<br>
+                    Layanan: ${vehicle.service_type === 'cuci' ? 'Cuci Mobil' : 'Detailing'}<br>
+                    Waktu: ${now.toLocaleString('id-ID')}
+                </div>
+                <hr>
+                <div class="receipt-footer">
+                    Terima kasih atas kunjungan Anda<br>
+                    Struk ini adalah sebagai<br>
+                    bukti antrian
+                </div>
+            `;
+            
+            document.getElementById('printModal').classList.add('active');
+        }
+
+        // Close modal
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            document.getElementById('printModal').classList.remove('active');
+        });
+
+        // Load registered vehicles
+        async function loadRegistered() {
+            try {
+                const response = await fetch('/api/admin/vehicles');
+                const vehicles = await response.json();
+                
+                const tbody = document.querySelector('#registeredTable tbody');
+                tbody.innerHTML = '';
+                
+                vehicles.forEach(vehicle => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${vehicle.queue_number}</td>
+                        <td>${vehicle.plate_number}</td>
+                        <td>${vehicle.service_type === 'cuci' ? 'Cuci Mobil' : 'Detailing'}</td>
+                        <td><span class="badge badge-${vehicle.status}">${getStatusText(vehicle.status)}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <select class="form-control form-control-sm" onchange="updateVehicleStatus(${vehicle.id}, this.value)" style="width: auto; display: inline-block;">
+                                    <option value="">-- Ubah Status --</option>
+                                    ${getStatusOptions(vehicle.service_type, vehicle.status)}
+                                </select>
+                                <button class="btn btn-sm btn-info" onclick="reprintReceipt(${JSON.stringify(vehicle).replace(/"/g, '&quot;')})">
+                                    <i class="fas fa-print"></i> Cetak
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error loading registered vehicles:', error);
+            }
+        }
+
+        // Reprint receipt
+        function reprintReceipt(vehicle) {
+            showPrintReceipt(vehicle);
+        }
+
+
+        // Get status options based on service type
+        function getStatusOptions(serviceType, currentStatus) {
+            const options = [];
+            
+            if (serviceType === 'cuci') {
+                if (currentStatus === 'waiting') {
+                    options.push('<option value="washing">Mulai Cuci</option>');
+                }
+                if (currentStatus === 'washing') {
+                    options.push('<option value="drying">Mulai Pengeringan</option>');
+                }
+                if (currentStatus === 'drying') {
+                    options.push('<option value="completed">Selesai</option>');
+                }
+            } else {
+                if (currentStatus === 'waiting') {
+                    options.push('<option value="detailing">Mulai Detailing</option>');
+                }
+                if (currentStatus === 'detailing') {
+                    options.push('<option value="completed">Selesai</option>');
+                }
+            }
+            
+            if (currentStatus !== 'completed') {
+                options.push('<option value="completed">Selesai Langsung</option>');
+            }
+            
+            return options.join('');
+        }
+
+        // Update vehicle status
+        async function updateVehicleStatus(vehicleId, newStatus) {
+            if (!newStatus) return;
+            
+            try {
+                const response = await fetch(`/api/queue/${vehicleId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success notification
+                    showNotification('Status berhasil diperbarui!', 'success');
+                    
+                    // Reload appropriate section based on current view
+                    if (currentSection === 'queue') {
+                        loadRegistered();
+                    } else if (currentSection === 'registration') {
+                        loadRegistered();
+                    } else if (currentSection === 'dashboard') {
+                        loadDashboard();
+                    }
+                } else {
+                    alert('Error updating status: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating status');
+            }
+        }
+
+        // Report form
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await loadReportData();
+        });
+
+        // Load report data
+        async function loadReportData() {
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            const serviceType = document.getElementById('reportServiceType').value;
+            
+            const params = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (serviceType) params.append('service_type', serviceType);
+            
+            try {
+                const response = await fetch(`/api/report/data?${params}`);
+                const result = await response.json();
+                
+                // Show summary
+                document.getElementById('reportSummary').style.display = 'block';
+                document.getElementById('report-total').textContent = result.summary.total_vehicles;
+                document.getElementById('report-cuci').textContent = result.summary.total_cuci;
+                document.getElementById('report-detailing').textContent = result.summary.total_detailing;
+                document.getElementById('report-avg-time').textContent = result.summary.average_time;
+                
+                // Show data table
+                document.getElementById('reportData').style.display = 'block';
+                const tbody = document.querySelector('#reportTable tbody');
+                tbody.innerHTML = '';
+                
+                result.data.forEach(vehicle => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${vehicle.queue_number}</td>
+                        <td>${vehicle.plate_number}</td>
+                        <td>${vehicle.service_type === 'cuci' ? 'Cuci Mobil' : 'Detailing'}</td>
+                        <td><span class="badge badge-${vehicle.status}">${getStatusText(vehicle.status)}</span></td>
+                        <td>${new Date(vehicle.created_at).toLocaleString('id-ID')}</td>
+                        <td>${vehicle.completed_at ? new Date(vehicle.completed_at).toLocaleString('id-ID') : '-'}</td>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error loading report:', error);
+                alert('Error loading report');
+            }
+        }
+
+        // Export Excel
+        document.getElementById('exportExcel').addEventListener('click', () => {
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            const serviceType = document.getElementById('reportServiceType').value;
+            
+            const params = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (serviceType) params.append('service_type', serviceType);
+            
+            window.location.href = `/api/report/export?${params}`;
+        });
+
+        // Load activity log
+        async function loadActivityLog(reset = false) {
+            if (reset) activityOffset = 0;
+            
+            try {
+                const response = await fetch(`/api/admin/activity?limit=20&offset=${activityOffset}`);
+                const result = await response.json();
+                
+                const tbody = document.querySelector('#activityTable tbody');
+                if (reset) tbody.innerHTML = '';
+                
+                result.activities.forEach(activity => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${new Date(activity.created_at).toLocaleString('id-ID')}</td>
+                        <td>${activity.plate_number ? `${activity.plate_number} (#${activity.queue_number})` : '-'}</td>
+                        <td>${activity.action}</td>
+                        <td>${activity.description || '-'}</td>
+                        <td>${activity.user}</td>
+                    `;
+                });
+                
+                activityOffset += result.activities.length;
+                
+                // Hide load more button if no more data
+                if (activityOffset >= result.total) {
+                    document.getElementById('loadMoreActivity').style.display = 'none';
+                } else {
+                    document.getElementById('loadMoreActivity').style.display = 'inline-block';
+                }
+            } catch (error) {
+                console.error('Error loading activity log:', error);
+            }
+        }
+
+        // Load more activity
+        document.getElementById('loadMoreActivity').addEventListener('click', () => {
+            loadActivityLog(false);
+        });
+
+        // Load settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/queue/running-text');
+                const data = await response.json();
+                document.getElementById('runningTextInput').value = data.text;
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        // Update running text
+        document.getElementById('runningTextForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const text = document.getElementById('runningTextInput').value;
+            
+            try {
+                const response = await fetch('/api/queue/running-text', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Running text berhasil diupdate');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error updating running text:', error);
+                alert('Error updating running text');
+            }
+        });
+
+        // Reset queue form
+        document.getElementById('resetQueueForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('resetPassword').value;
+            
+            if (!confirm('Apakah Anda yakin ingin mereset nomor antrian? Semua antrian yang belum selesai akan ditandai sebagai selesai.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/reset-queue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Nomor antrian berhasil direset!');
+                    document.getElementById('resetQueueForm').reset();
+                    // Reload dashboard
+                    if (currentSection === 'dashboard') {
+                        loadDashboard();
+                    }
+                } else {
+                    alert('Error: ' + (result.error || 'Password salah'));
+                }
+            } catch (error) {
+                console.error('Error resetting queue:', error);
+                alert('Error resetting queue');
+            }
+        });
+
+        // Helper function to get status text
+        function getStatusText(status) {
+            const statusMap = {
+                'waiting': 'Menunggu',
+                'washing': 'Cuci',
+                'drying': 'Pengeringan',
+                'detailing': 'Detailing',
+                'completed': 'Selesai'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Socket listeners
+        socket.on('queueUpdate', () => {
+            if (currentSection === 'dashboard') {
+                loadDashboard();
+            } else if (currentSection === 'queue') {
+                loadRegistered();
+            }
+        });
+
+        socket.on('dailyReset', (data) => {
+            console.log('Daily reset occurred:', data.message);
+            // Show notification
+            alert('Sistem: Nomor antrian telah direset otomatis untuk hari baru (00:01)');
+            // Reload current section
+            if (currentSection === 'dashboard') {
+                loadDashboard();
+            } else if (currentSection === 'queue') {
+                loadRegistered();
+            } else if (currentSection === 'activity') {
+                loadActivityLog(true);
+            }
+        });
+
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 9999;
+                animation: slideInRight 0.3s ease;
+                font-weight: 500;
+            `;
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle'}"></i>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Keyboard shortcut to open display view (Ctrl+D or Cmd+D)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                e.preventDefault();
+                window.open('/', '_blank');
+            }
+        });
+
+        // Initial load
+        loadDashboard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .status-section {
+            margin-bottom: 30px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        
+        .vehicle-item {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #7c3aed;
+        }
+        
+        .completed {
+            border-left-color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Display - Debug</h1>
+    
+    <div id="waiting-section" class="status-section">
+        <h2>Waiting</h2>
+        <div id="waiting-list"></div>
+    </div>
+    
+    <div id="washing-section" class="status-section">
+        <h2>Washing</h2>
+        <div id="washing-list"></div>
+    </div>
+    
+    <div id="drying-section" class="status-section">
+        <h2>Drying</h2>
+        <div id="drying-list"></div>
+    </div>
+    
+    <div id="completed-section" class="status-section">
+        <h2>Completed</h2>
+        <div id="completed-list"></div>
+    </div>
+    
+    <button onclick="loadAndDisplay()">Load Data</button>
+    
+    <div id="raw-data" style="margin-top: 20px;">
+        <h3>Raw Data:</h3>
+        <pre id="raw-output"></pre>
+    </div>
+
+    <script>
+        async function loadAndDisplay() {
+            try {
+                const response = await fetch('/api/queue/active');
+                const data = await response.json();
+                
+                // Show raw data
+                document.getElementById('raw-output').textContent = JSON.stringify(data, null, 2);
+                
+                // Clear all sections
+                document.getElementById('waiting-list').innerHTML = '';
+                document.getElementById('washing-list').innerHTML = '';
+                document.getElementById('drying-list').innerHTML = '';
+                document.getElementById('completed-list').innerHTML = '';
+                
+                // Process cuci vehicles
+                data.cuci.forEach(vehicle => {
+                    const div = document.createElement('div');
+                    div.className = vehicle.status === 'completed' ? 'vehicle-item completed' : 'vehicle-item';
+                    div.innerHTML = `
+                        <strong>${vehicle.queue_number}</strong> - ${vehicle.plate_number}<br>
+                        Status: ${vehicle.status}<br>
+                        Created: ${vehicle.created_at}<br>
+                        ${vehicle.completed_at ? `Completed: ${vehicle.completed_at}` : ''}
+                    `;
+                    
+                    switch(vehicle.status) {
+                        case 'waiting':
+                            document.getElementById('waiting-list').appendChild(div);
+                            break;
+                        case 'washing':
+                            document.getElementById('washing-list').appendChild(div);
+                            break;
+                        case 'drying':
+                            document.getElementById('drying-list').appendChild(div);
+                            break;
+                        case 'completed':
+                            document.getElementById('completed-list').appendChild(div);
+                            console.log('Added to completed:', vehicle);
+                            break;
+                    }
+                });
+                
+                // Count completed
+                const completedCount = data.cuci.filter(v => v.status === 'completed').length;
+                console.log(`Found ${completedCount} completed vehicles`);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading data: ' + error);
+            }
+        }
+        
+        // Load on page load
+        window.onload = loadAndDisplay;
+    </script>
+</body>
+</html>

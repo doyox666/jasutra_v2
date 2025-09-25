@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Carwash - Display Antrian</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .running-text {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .running-text span {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 30s linear infinite;
+            font-size: 1.1em;
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(-100%, 0);
+            }
+        }
+
+        .container {
+            padding: 30px;
+            flex: 1;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            color: white;
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .queue-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .cuci-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .detailing-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .queue-column {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .column-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .queue-item {
+            background: white;
+            padding: 0;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            align-items: stretch;
+            min-height: 80px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .queue-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .queue-number {
+            background: #7c3aed;
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            min-width: 120px;
+        }
+
+        /* Different colors for different statuses */
+        .queue-item[data-status="waiting"] .queue-number {
+            background: #7c3aed;
+        }
+
+        .queue-item[data-status="washing"] .queue-number,
+        .queue-item[data-status="detailing"] .queue-number {
+            background: #3b82f6;
+        }
+
+        .queue-item[data-status="drying"] .queue-number {
+            background: #f59e0b;
+        }
+
+        .queue-item[data-status="completed"] .queue-number {
+            background: #10b981;
+        }
+
+        .queue-item[data-status="completed"] {
+            opacity: 0.9;
+        }
+
+        .queue-item[data-status="completed"] .queue-details::after {
+            content: "✓ Selesai";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #10b981;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .queue-item[data-status="completed"] .queue-details {
+            position: relative;
+        }
+
+        .queue-details {
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .plate-number {
+            font-size: 1.5em;
+            color: #4a5568;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .queue-time {
+            font-size: 0.85em;
+            color: #718096;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+
+        .clock {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        @media (max-width: 1200px) {
+            .cuci-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .cuci-grid,
+            .detailing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .queue-item {
+                min-height: 70px;
+            }
+
+            .queue-number {
+                font-size: 1.4em;
+                padding: 15px 20px;
+                min-width: 100px;
+            }
+
+            .plate-number {
+                font-size: 1.2em;
+            }
+
+            .queue-details {
+                padding: 12px 15px;
+            }
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>JS CARWASH</h1>
+        <div class="subtitle">Sistem Antrian Digital</div>
+    </div>
+
+    <div class="running-text">
+        <span id="runningText">Selamat Datang di JS Carwash - Jl. Raya Perumnas No.235, Sukaluyu, Teluk Jambe Timur, Karawang</span>
+    </div>
+
+    <div class="container">
+        <!-- Section Cuci -->
+        <div class="section">
+            <h2 class="section-title">ANTRIAN CUCI MOBIL</h2>
+            <div class="queue-grid cuci-grid">
+                <div class="queue-column">
+                    <div class="column-header">MASUK ANTRIAN</div>
+                    <div id="cuci-waiting" class="queue-list">
+                        <div class="empty-state">Tidak ada antrian</div>
+                    </div>
+                </div>
+                <div class="queue-column">
+                    <div class="column-header">CUCI</div>
+                    <div id="cuci-washing" class="queue-list">
+                        <div class="empty-state">Tidak ada antrian</div>
+                    </div>
+                </div>
+                <div class="queue-column">
+                    <div class="column-header">PENGERINGAN</div>
+                    <div id="cuci-drying" class="queue-list">
+                        <div class="empty-state">Tidak ada antrian</div>
+                    </div>
+                </div>
+                <div class="queue-column">
+                    <div class="column-header">SELESAI</div>
+                    <div id="cuci-completed" class="queue-list">
+                        <div class="empty-state">Tidak ada antrian</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Detailing -->
+        <div class="section">
+            <h2 class="section-title">ANTRIAN DETAILING</h2>
+            <div class="queue-grid detailing-grid">
+                <div class="queue-column">
+                    <div class="column-header">MASUK ANTRIAN</div>
+                    <div id="detailing-waiting" class="queue-list">
+                        <div class="empty-state">Tidak ada antrian</div>
+                    </div>
+                </div>
+                <div class="queue-column">
+                    <div class="column-header">DETAILING</div>
+                    <div id="detailing-process" class="queue-list">
+                        <div class="empty-state">Tidak ada antrian</div>
+                    </div>
+                </div>
+                <div class="queue-column">
+                    <div class="column-header">SELESAI</div>
+                    <div id="detailing-completed" class="queue-list">
+                        <div class="empty-state">Tidak ada antrian</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clock" id="clock"></div>
+
+    <script>
+        const socket = io();
+        
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('id-ID');
+            const dateString = now.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('clock').innerHTML = `${timeString}<br><small>${dateString}</small>`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Load running text
+        async function loadRunningText() {
+            try {
+                const response = await fetch('/api/queue/running-text');
+                const data = await response.json();
+                document.getElementById('runningText').textContent = data.text;
+            } catch (error) {
+                console.error('Error loading running text:', error);
+            }
+        }
+
+        // Load active queues
+        async function loadQueues() {
+            try {
+                console.log('Loading queues...');
+                const response = await fetch('/api/queue/active');
+                const data = await response.json();
+                console.log('Fetched data:', data);
+                updateQueueDisplay(data);
+            } catch (error) {
+                console.error('Error loading queues:', error);
+            }
+        }
+
+        // Update queue display
+        function updateQueueDisplay(data) {
+            console.log('Updating display with data:', data);
+            
+            // Count completed items for debugging
+            const completedCuci = data.cuci.filter(v => v.status === 'completed');
+            const completedDetailing = data.detailing.filter(v => v.status === 'completed');
+            console.log(`Completed items - Cuci: ${completedCuci.length}, Detailing: ${completedDetailing.length}`);
+            
+            // Clear all queue lists
+            const lists = document.querySelectorAll('.queue-list');
+            lists.forEach(list => {
+                list.innerHTML = '<div class="empty-state">Tidak ada antrian</div>';
+            });
+
+            // Process cuci queues
+            console.log('Processing cuci queues:', data.cuci.length, 'total vehicles');
+            data.cuci.forEach(vehicle => {
+                let targetId;
+                switch(vehicle.status) {
+                    case 'waiting':
+                        targetId = 'cuci-waiting';
+                        break;
+                    case 'washing':
+                        targetId = 'cuci-washing';
+                        break;
+                    case 'drying':
+                        targetId = 'cuci-drying';
+                        break;
+                    case 'completed':
+                        targetId = 'cuci-completed';
+                        console.log(`✓ Adding ${vehicle.queue_number} (${vehicle.plate_number}) to SELESAI column`);
+                        break;
+                    default:
+                        console.warn('Unknown status:', vehicle.status);
+                        break;
+                }
+                if (targetId) {
+                    addQueueItem(targetId, vehicle);
+                }
+            });
+
+            // Process detailing queues
+            console.log('Processing detailing queues:', data.detailing.length, 'total vehicles');
+            data.detailing.forEach(vehicle => {
+                let targetId;
+                switch(vehicle.status) {
+                    case 'waiting':
+                        targetId = 'detailing-waiting';
+                        break;
+                    case 'detailing':
+                        targetId = 'detailing-process';
+                        break;
+                    case 'completed':
+                        targetId = 'detailing-completed';
+                        console.log(`✓ Adding ${vehicle.queue_number} (${vehicle.plate_number}) to DETAILING SELESAI column`);
+                        break;
+                    default:
+                        console.warn('Unknown detailing status:', vehicle.status);
+                        break;
+                }
+                if (targetId) {
+                    addQueueItem(targetId, vehicle);
+                }
+            });
+        }
+
+        // Add queue item to display
+        function addQueueItem(targetId, vehicle) {
+            const container = document.getElementById(targetId);
+            
+            if (!container) {
+                console.error('ERROR: Container not found for ID:', targetId);
+                return;
+            }
+            
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                container.innerHTML = '';
+            }
+
+            const time = new Date(vehicle.created_at).toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+
+            const item = document.createElement('div');
+            item.className = 'queue-item';
+            item.setAttribute('data-status', vehicle.status);
+            item.innerHTML = `
+                <div class="queue-number">${vehicle.queue_number}</div>
+                <div class="queue-details">
+                    <div class="plate-number">${vehicle.plate_number}</div>
+                    <div class="queue-time">Masuk: ${time}</div>
+                </div>
+            `;
+            container.appendChild(item);
+            
+            // Special log for completed items
+            if (vehicle.status === 'completed') {
+                console.log(`✅ Successfully displayed ${vehicle.queue_number} in ${targetId}`);
+            }
+        }
+
+        // Socket event listeners
+        socket.on('queueUpdate', (data) => {
+            console.log('Socket queueUpdate received:', data);
+            loadQueues();
+        });
+
+        socket.on('runningTextUpdate', (data) => {
+            console.log('Socket runningTextUpdate received:', data);
+            document.getElementById('runningText').textContent = data.text;
+        });
+
+        socket.on('dailyReset', (data) => {
+            console.log('Daily reset occurred:', data.message);
+            loadQueues(); // Reload queues after reset
+            // Optional: Show a notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #28a745;
+                color: white;
+                padding: 15px 30px;
+                border-radius: 10px;
+                z-index: 9999;
+                animation: fadeInOut 5s;
+            `;
+            notification.textContent = 'Nomor antrian telah direset untuk hari baru';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        });
+
+        // Initial load
+        loadQueues();
+        loadRunningText();
+
+        // Refresh every 30 seconds
+        setInterval(() => {
+            loadQueues();
+        }, 30000);
+    </script>
+</body>
+</html>

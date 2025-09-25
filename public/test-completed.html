@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Completed Display</title>
+</head>
+<body>
+    <h1>Test Completed Display</h1>
+    <button onclick="testDisplay()">Test Display Update</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testDisplay() {
+            // Fetch data from API
+            const response = await fetch('/api/queue/active');
+            const data = await response.json();
+            
+            // Count completed items
+            const cuciCompleted = data.cuci.filter(v => v.status === 'completed');
+            const detailingCompleted = data.detailing.filter(v => v.status === 'completed');
+            
+            // Display results
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <h2>API Response:</h2>
+                <p>Cuci Completed: ${cuciCompleted.length}</p>
+                <ul>${cuciCompleted.map(v => `<li>${v.queue_number} - ${v.plate_number}</li>`).join('')}</ul>
+                <p>Detailing Completed: ${detailingCompleted.length}</p>
+                <ul>${detailingCompleted.map(v => `<li>${v.queue_number} - ${v.plate_number}</li>`).join('')}</ul>
+                <h3>Raw Data:</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            
+            // Now test on actual display page
+            console.log('Opening display page to test...');
+            window.open('/display.html', '_blank');
+        }
+    </script>
+</body>
+</html>
