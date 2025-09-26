@@ -1,5 +1,5 @@
 const express = require('express');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const { db } = require('../database');
 const path = require('path');
 const fs = require('fs');
@@ -92,37 +92,77 @@ router.get('/export', (req, res) => {
   
   query += ` ORDER BY created_at DESC`;
   
-  db.all(query, params, (err, rows) => {
+  db.all(query, params, async (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
     } else {
-      // Create workbook
-      const wb = XLSX.utils.book_new();
-      
-      // Add main data sheet
-      const ws = XLSX.utils.json_to_sheet(rows);
-      XLSX.utils.book_append_sheet(wb, ws, 'Data Kendaraan');
-      
-      // Add summary sheet
-      const summaryData = [
-        { Metric: 'Total Kendaraan', Value: rows.length },
-        { Metric: 'Total Cuci', Value: rows.filter(r => r['Jenis Layanan'] === 'cuci').length },
-        { Metric: 'Total Detailing', Value: rows.filter(r => r['Jenis Layanan'] === 'detailing').length },
-        { Metric: 'Selesai', Value: rows.filter(r => r.Status === 'completed').length },
-        { Metric: 'Dalam Proses', Value: rows.filter(r => ['washing', 'drying', 'detailing'].includes(r.Status)).length },
-        { Metric: 'Menunggu', Value: rows.filter(r => r.Status === 'waiting').length }
-      ];
-      const ws2 = XLSX.utils.json_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(wb, ws2, 'Ringkasan');
-      
-      // Generate buffer
-      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      
-      // Set headers for download
-      const filename = `JSCarwash_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.send(buffer);
+      try {
+        // Create workbook
+        const workbook = new ExcelJS.Workbook();
+        
+        // Add main data sheet
+        const dataSheet = workbook.addWorksheet('Data Kendaraan');
+        
+        // Add headers and data for main sheet
+        if (rows.length > 0) {
+          const headers = Object.keys(rows[0]);
+          dataSheet.addRow(headers);
+          rows.forEach(row => {
+            dataSheet.addRow(Object.values(row));
+          });
+          
+          // Style the header row
+          dataSheet.getRow(1).font = { bold: true };
+          dataSheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+          };
+        }
+        
+        // Add summary sheet
+        const summarySheet = workbook.addWorksheet('Ringkasan');
+        const summaryData = [
+          ['Metric', 'Value'],
+          ['Total Kendaraan', rows.length],
+          ['Total Cuci', rows.filter(r => r['Jenis Layanan'] === 'cuci').length],
+          ['Total Detailing', rows.filter(r => r['Jenis Layanan'] === 'detailing').length],
+          ['Selesai', rows.filter(r => r.Status === 'completed').length],
+          ['Dalam Proses', rows.filter(r => ['washing', 'drying', 'detailing'].includes(r.Status)).length],
+          ['Menunggu', rows.filter(r => r.Status === 'waiting').length]
+        ];
+        
+        summaryData.forEach(row => {
+          summarySheet.addRow(row);
+        });
+        
+        // Style the summary header
+        summarySheet.getRow(1).font = { bold: true };
+        summarySheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        
+        // Auto-fit columns
+        [dataSheet, summarySheet].forEach(sheet => {
+          sheet.columns.forEach(column => {
+            column.width = 15;
+          });
+        });
+        
+        // Generate buffer
+        const buffer = await workbook.xlsx.writeBuffer();
+        
+        // Set headers for download
+        const filename = `JSCarwash_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+      } catch (error) {
+        console.error('Excel generation error:', error);
+        res.status(500).json({ error: 'Failed to generate Excel file' });
+      }
     }
   });
 });

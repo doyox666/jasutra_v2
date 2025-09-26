@@ -1,0 +1,21 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.status-section {
+    margin-bottom: 30px;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+.vehicle-item {
+    background: #f0f0f0;
+    padding: 10px;
+    margin: 5px 0;
+    border-left: 4px solid #7c3aed;
+}
+
+.completed {
+    border-left-color: #10b981;
+}
