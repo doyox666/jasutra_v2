@@ -309,6 +309,202 @@
         const socket = io();
         let currentSection = 'dashboard';
         let activityOffset = 0;
+        
+        // Audio notification system for admin
+        let isAudioEnabled = false;
+        let audioContext = null;
+        
+        // Initialize audio context
+        function initializeAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                isAudioEnabled = true;
+                console.log('Admin audio context initialized');
+            } catch (error) {
+                console.warn('Web Audio API not supported:', error);
+                isAudioEnabled = false;
+            }
+        }
+        
+        // Play notification beep sound
+        function playNotificationBeep() {
+            if (!isAudioEnabled || !audioContext) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (error) {
+                console.warn('Error playing beep sound:', error);
+            }
+        }
+        
+        // Convert plate number to spell out each character
+        function spellOutPlateNumber(plateNumber) {
+            const numberMap = {
+                '0': 'nol',
+                '1': 'satu',
+                '2': 'dua', 
+                '3': 'tiga',
+                '4': 'empat',
+                '5': 'lima',
+                '6': 'enam',
+                '7': 'tujuh',
+                '8': 'delapan',
+                '9': 'sembilan'
+            };
+            
+            return plateNumber
+                .split('')
+                .map(char => {
+                    if (char === ' ') {
+                        return ' '; // Keep spaces
+                    } else if (numberMap[char]) {
+                        return numberMap[char]; // Convert numbers
+                    } else {
+                        return char.toUpperCase(); // Keep letters as uppercase
+                    }
+                })
+                .join(' '); // Add space between each character
+        }
+        
+        // Text-to-speech announcement for admin
+        function announceCustomer(plateNumber) {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Text-to-speech not supported');
+                return;
+            }
+            
+            try {
+                // Stop any ongoing speech
+                speechSynthesis.cancel();
+                
+                // Convert plate number to spell out each character
+                const spelledPlateNumber = spellOutPlateNumber(plateNumber);
+                
+                // Get voice
+                const voices = speechSynthesis.getVoices();
+                const indonesianVoice = voices.find(voice => 
+                    voice.lang.includes('id') || voice.name.includes('Indonesia')
+                );
+                
+                // First announcement - plate number (slower)
+                const plateUtterance = new SpeechSynthesisUtterance(spelledPlateNumber);
+                plateUtterance.lang = 'id-ID';
+                plateUtterance.volume = 0.8;
+                plateUtterance.rate = 0.7; // Slower for plate number clarity
+                plateUtterance.pitch = 1.0;
+                if (indonesianVoice) plateUtterance.voice = indonesianVoice;
+                
+                // Second part - "telah selesai" (faster)
+                plateUtterance.onend = () => {
+                    const completionUtterance = new SpeechSynthesisUtterance('telah selesai');
+                    completionUtterance.lang = 'id-ID';
+                    completionUtterance.volume = 0.8;
+                    completionUtterance.rate = 1.1; // Faster for "telah selesai"
+                    completionUtterance.pitch = 1.0;
+                    if (indonesianVoice) completionUtterance.voice = indonesianVoice;
+                    
+                    // Third part - repeat plate number and completion
+                    completionUtterance.onend = () => {
+                        setTimeout(() => {
+                            const repeatPlateUtterance = new SpeechSynthesisUtterance(spelledPlateNumber);
+                            repeatPlateUtterance.lang = 'id-ID';
+                            repeatPlateUtterance.volume = 0.8;
+                            repeatPlateUtterance.rate = 0.7; // Slower for plate number
+                            repeatPlateUtterance.pitch = 1.0;
+                            if (indonesianVoice) repeatPlateUtterance.voice = indonesianVoice;
+                            
+                            repeatPlateUtterance.onend = () => {
+                                const finalCompletionUtterance = new SpeechSynthesisUtterance('telah selesai');
+                                finalCompletionUtterance.lang = 'id-ID';
+                                finalCompletionUtterance.volume = 0.8;
+                                finalCompletionUtterance.rate = 0.9; // Faster for "telah selesai"
+                                finalCompletionUtterance.pitch = 1.0;
+                                if (indonesianVoice) finalCompletionUtterance.voice = indonesianVoice;
+                                
+                                speechSynthesis.speak(finalCompletionUtterance);
+                            };
+                            
+                            speechSynthesis.speak(repeatPlateUtterance);
+                        }, 300); // Short pause before repeat
+                    };
+                    
+                    speechSynthesis.speak(completionUtterance);
+                };
+                
+                speechSynthesis.speak(plateUtterance);
+                console.log(`Admin announcing: ${spelledPlateNumber} telah selesai`);
+            } catch (error) {
+                console.warn('Error in text-to-speech:', error);
+            }
+        }
+        
+        // Call customer function
+        function callCustomer(plateNumber, serviceType) {
+            // Initialize audio if not already done
+            if (!audioContext) {
+                initializeAudio();
+            }
+            
+            // Show confirmation with audio option
+            const serviceText = serviceType === 'cuci' ? 'Cuci Mobil' : 'Detailing';
+            const shouldPlayAudio = confirm(`🔊 Panggil Customer\n\nPlat Nomor: ${plateNumber}\nLayanan: ${serviceText}\n\nKlik OK untuk panggil dengan pengumuman suara\nKlik Cancel untuk batal`);
+            
+            if (shouldPlayAudio) {
+                // Show immediate feedback
+                showNotification(`Memanggil customer ${plateNumber}...`, 'info');
+                
+                // Play notification sound
+                setTimeout(() => {
+                    playNotificationBeep();
+                }, 200);
+                
+                // Announce customer
+                setTimeout(() => {
+                    announceCustomer(plateNumber);
+                }, 800);
+                
+                // Show success notification
+                setTimeout(() => {
+                    showNotification(`✅ Customer ${plateNumber} telah dipanggil!\n🔊 Pengumuman telah diputar`, 'success');
+                }, 2000);
+                
+                // Log activity for this action
+                setTimeout(() => {
+                    logCustomerCall(plateNumber, serviceType);
+                }, 2500);
+            }
+        }
+        
+        // Log customer call activity (optional)
+        function logCustomerCall(plateNumber, serviceType) {
+            try {
+                // This could be enhanced to log to backend if needed
+                console.log(`Customer called: ${plateNumber} (${serviceType}) at ${new Date().toLocaleString('id-ID')}`);
+            } catch (error) {
+                console.warn('Error logging customer call:', error);
+            }
+        }
+        
+        // Initialize audio on first user interaction
+        document.addEventListener('click', () => {
+            if (!audioContext) {
+                initializeAudio();
+            }
+        }, { once: true });
 
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -496,6 +692,9 @@
                                     </button>
                                 ` : ''}
                                 ${vehicle.status === 'completed' ? `
+                                    <button class="btn btn-sm btn-success call-customer-btn" onclick="callCustomer('${vehicle.plate_number}', '${vehicle.service_type}')" title="🔊 Panggil Customer ${vehicle.plate_number} dengan pengumuman suara">
+                                        <i class="fas fa-bullhorn"></i> Panggil
+                                    </button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteVehicle(${vehicle.id}, '${vehicle.queue_number}', '${vehicle.plate_number}')">
                                         <i class="fas fa-trash"></i> Hapus
                                     </button>

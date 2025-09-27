@@ -279,6 +279,66 @@ body {
     font-size: 0.9em;
 }
 
+/* Special styling for call customer button */
+.btn-success {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-success:hover {
+    animation: callPulse 0.6s ease-in-out;
+}
+
+.btn-success:active {
+    transform: scale(0.95);
+}
+
+@keyframes callPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+/* Call customer button specific styling */
+.call-customer-btn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    position: relative;
+}
+
+.call-customer-btn:hover {
+    background: linear-gradient(135deg, #218838, #1ea886);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.call-customer-btn:active {
+    animation: callPulse 0.6s ease-in-out;
+}
+
+.call-customer-btn i {
+    margin-right: 5px;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-3px);
+    }
+    60% {
+        transform: translateY(-1px);
+    }
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
