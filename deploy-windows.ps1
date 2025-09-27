@@ -217,7 +217,7 @@ function Install-Dependencies {
     }
 }
 
-function Create-Configuration {
+function New-Configuration {
     Write-Host "[*] Membuat file konfigurasi..." -ForegroundColor Yellow
     
     $envContent = @"
@@ -230,10 +230,8 @@ DATABASE_PATH=./data.db
     Set-Content -Path "$InstallPath\.env" -Value $envContent
     Write-Host "[+] File konfigurasi dibuat!" -ForegroundColor Green
 }
-
-function Create-Scripts {
+function New-Scripts {
     Write-Host "[*] Membuat script untuk menjalankan aplikasi..." -ForegroundColor Yellow
-    
     # Install dependencies script (fallback)
     $installDepsScript = @"
 @echo off
@@ -332,7 +330,7 @@ call "$InstallPath\start-jscarwash.bat"
     Write-Host "[+] Script aplikasi dibuat!" -ForegroundColor Green
 }
 
-function Create-Shortcuts {
+function New-Shortcuts {
     Write-Host "[*] Membuat shortcuts di Desktop..." -ForegroundColor Yellow
     
     $WshShell = New-Object -ComObject WScript.Shell
@@ -376,7 +374,7 @@ function Create-Shortcuts {
     Write-Host "[+] Shortcuts berhasil dibuat di Desktop!" -ForegroundColor Green
 }
 
-function Configure-Firewall {
+function Set-FirewallRule {
     Write-Host "[*] Menambahkan ke Windows Firewall..." -ForegroundColor Yellow
     
     try {
@@ -387,7 +385,7 @@ function Configure-Firewall {
     }
 }
 
-function Setup-AutoStart {
+function Enable-AutoStart {
     $response = Read-Host "Apakah Anda ingin aplikasi berjalan otomatis saat Windows start? (Y/N)"
     if ($response -eq 'Y') {
         try {
@@ -459,27 +457,27 @@ if (-not (Install-Dependencies)) {
 Write-Host ""
 
 # Create configuration
-Create-Configuration
+New-Configuration
 
 Write-Host ""
 
 # Create scripts
-Create-Scripts
+New-Scripts
 
 Write-Host ""
 
 # Create shortcuts
-Create-Shortcuts
+New-Shortcuts
 
 Write-Host ""
 
 # Configure firewall
-Configure-Firewall
+Set-FirewallRule
 
 Write-Host ""
 
 # Setup auto-start
-Setup-AutoStart
+Enable-AutoStart
 
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Green
