@@ -44,8 +44,11 @@ function Show-Header {
 function Install-NodeJS {
     Write-Host "[*] Memeriksa Node.js..." -ForegroundColor Yellow
     
+    # Refresh PATH first
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    
     try {
-        $nodeVersion = node --version 2>$null
+        $nodeVersion = & node --version 2>$null
         if ($nodeVersion) {
             Write-Host "[+] Node.js sudah terinstall: $nodeVersion" -ForegroundColor Green
             return $true
@@ -63,12 +66,42 @@ function Install-NodeJS {
         Write-Host "[*] Menginstall Node.js..." -ForegroundColor Yellow
         Start-Process msiexec.exe -ArgumentList "/i", $nodeInstaller, "/qn", "ADDLOCAL=ALL" -Wait
         
-        # Refresh PATH
+        # Multiple attempts to refresh PATH
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        
+        # Wait a bit for installation to complete
+        Start-Sleep -Seconds 5
+        
+        # Try to find Node.js installation path
+        $possiblePaths = @(
+            "${env:ProgramFiles}\nodejs",
+            "${env:ProgramFiles(x86)}\nodejs",
+            "$env:APPDATA\npm"
+        )
+        
+        foreach ($path in $possiblePaths) {
+            if (Test-Path "$path\node.exe") {
+                if ($env:Path -notlike "*$path*") {
+                    $env:Path += ";$path"
+                    [Environment]::SetEnvironmentVariable("Path", $env:Path, "Process")
+                }
+                break
+            }
+        }
         
         Remove-Item $nodeInstaller -Force
         Write-Host "[+] Node.js berhasil diinstall!" -ForegroundColor Green
-        return $true
+        
+        # Verify installation
+        try {
+            $nodeVersion = & node --version 2>$null
+            Write-Host "[+] Verifikasi Node.js: $nodeVersion" -ForegroundColor Green
+            return $true
+        } catch {
+            Write-Host "[!] Node.js terinstall tapi tidak dapat diakses. Silakan restart PowerShell dan jalankan script lagi." -ForegroundColor Yellow
+            return $false
+        }
+        
     } catch {
         Write-Host "[!] Gagal menginstall Node.js: $_" -ForegroundColor Red
         return $false
@@ -120,16 +153,66 @@ function Install-Application {
 function Install-Dependencies {
     Write-Host "[*] Menginstall dependencies..." -ForegroundColor Yellow
     
+    # Refresh PATH again before npm install
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    
+    # Try to find npm path
+    $npmPath = $null
+    $possibleNpmPaths = @(
+        "${env:ProgramFiles}\nodejs\npm.cmd",
+        "${env:ProgramFiles(x86)}\nodejs\npm.cmd",
+        "$env:APPDATA\npm\npm.cmd"
+    )
+    
+    foreach ($path in $possibleNpmPaths) {
+        if (Test-Path $path) {
+            $npmPath = $path
+            break
+        }
+    }
+    
+    if (-not $npmPath) {
+        # Try using 'where' command to find npm
+        try {
+            $npmPath = (Get-Command npm -ErrorAction SilentlyContinue).Source
+        } catch {}
+    }
+    
+    if (-not $npmPath) {
+        Write-Host "[!] npm tidak ditemukan. Mencoba restart PowerShell..." -ForegroundColor Yellow
+        Write-Host "[!] Silakan tutup PowerShell ini dan jalankan script lagi sebagai Administrator." -ForegroundColor Red
+        return $false
+    }
+    
+    Write-Host "[*] Menggunakan npm dari: $npmPath" -ForegroundColor Cyan
+    
     try {
-        $process = Start-Process npm -ArgumentList "install", "--production" -NoNewWindow -Wait -PassThru
+        # Try direct call to npm
+        $process = Start-Process -FilePath $npmPath -ArgumentList "install", "--production" -NoNewWindow -Wait -PassThru -WorkingDirectory $InstallPath
+        
         if ($process.ExitCode -eq 0) {
             Write-Host "[+] Dependencies berhasil diinstall!" -ForegroundColor Green
             return $true
         } else {
-            throw "npm install failed with exit code $($process.ExitCode)"
+            # Try alternative method using cmd
+            Write-Host "[*] Mencoba metode alternatif..." -ForegroundColor Yellow
+            $result = cmd /c "cd /d `"$InstallPath`" && npm install --production 2>&1"
+            
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "[+] Dependencies berhasil diinstall dengan metode alternatif!" -ForegroundColor Green
+                return $true
+            } else {
+                Write-Host "[!] Output error: $result" -ForegroundColor Red
+                throw "npm install failed with exit code $LASTEXITCODE"
+            }
         }
     } catch {
         Write-Host "[!] Gagal menginstall dependencies: $_" -ForegroundColor Red
+        Write-Host "[*] Mencoba solusi manual..." -ForegroundColor Yellow
+        Write-Host "Silakan jalankan perintah berikut secara manual:" -ForegroundColor Cyan
+        Write-Host "1. Buka Command Prompt sebagai Administrator" -ForegroundColor White
+        Write-Host "2. cd /d `"$InstallPath`"" -ForegroundColor White
+        Write-Host "3. npm install --production" -ForegroundColor White
         return $false
     }
 }
@@ -151,6 +234,30 @@ DATABASE_PATH=./data.db
 function Create-Scripts {
     Write-Host "[*] Membuat script untuk menjalankan aplikasi..." -ForegroundColor Yellow
     
+    # Install dependencies script (fallback)
+    $installDepsScript = @"
+@echo off
+title JS Carwash V2 - Install Dependencies
+cd /d "$InstallPath"
+echo ========================================================
+echo        JS CARWASH V2 - INSTALL DEPENDENCIES
+echo ========================================================
+echo.
+echo [*] Menginstall dependencies...
+npm install --production
+echo.
+if %ERRORLEVEL% EQU 0 (
+    echo [+] Dependencies berhasil diinstall!
+    echo [*] Anda sekarang bisa menjalankan server dengan start-jscarwash.bat
+) else (
+    echo [!] Gagal menginstall dependencies!
+    echo [*] Pastikan Node.js sudah terinstall dengan benar
+)
+echo.
+pause
+"@
+    Set-Content -Path "$InstallPath\install-dependencies.bat" -Value $installDepsScript
+    
     # Start script
     $startScript = @"
 @echo off
@@ -159,6 +266,30 @@ cd /d "$InstallPath"
 echo ========================================================
 echo           JS CARWASH V2 - SISTEM ANTRIAN DIGITAL
 echo ========================================================
+echo.
+echo [*] Memeriksa Node.js...
+where node >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [!] Node.js tidak ditemukan di PATH!
+    echo [*] Silakan restart komputer atau install Node.js
+    pause
+    exit /b 1
+)
+echo [+] Node.js ditemukan
+echo.
+echo [*] Memeriksa dependencies...
+if not exist "node_modules" (
+    echo [!] Dependencies belum diinstall!
+    echo [*] Menjalankan npm install...
+    npm install --production
+    if %ERRORLEVEL% NEQ 0 (
+        echo [!] Gagal menginstall dependencies!
+        echo [*] Jalankan install-dependencies.bat secara manual
+        pause
+        exit /b 1
+    )
+)
+echo [+] Dependencies OK
 echo.
 echo [*] Memulai server...
 echo.
@@ -170,6 +301,11 @@ echo Tekan Ctrl+C untuk menghentikan server
 echo ========================================================
 echo.
 node src/server.js
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [!] Server berhenti dengan error!
+    echo [*] Periksa apakah port $Port sudah digunakan aplikasi lain
+)
 pause
 "@
     Set-Content -Path "$InstallPath\start-jscarwash.bat" -Value $startScript
@@ -200,6 +336,14 @@ function Create-Shortcuts {
     Write-Host "[*] Membuat shortcuts di Desktop..." -ForegroundColor Yellow
     
     $WshShell = New-Object -ComObject WScript.Shell
+    
+    # Install Dependencies shortcut
+    $Shortcut = $WshShell.CreateShortcut("$DesktopPath\JS Carwash - Install Dependencies.lnk")
+    $Shortcut.TargetPath = "$InstallPath\install-dependencies.bat"
+    $Shortcut.WorkingDirectory = $InstallPath
+    $Shortcut.IconLocation = "$env:windir\System32\shell32.dll,23"
+    $Shortcut.Description = "Install JS Carwash Dependencies"
+    $Shortcut.Save()
     
     # Start Server shortcut
     $Shortcut = $WshShell.CreateShortcut("$DesktopPath\JS Carwash - Start Server.lnk")
@@ -266,7 +410,17 @@ Show-Header
 
 # Check and install Node.js
 if (-not (Install-NodeJS)) {
-    Write-Host "Instalasi gagal. Silakan install Node.js manual dari https://nodejs.org" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "========================================================" -ForegroundColor Red
+    Write-Host "                  INSTALASI NODE.JS GAGAL!" -ForegroundColor Red
+    Write-Host "========================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Silakan lakukan instalasi manual Node.js:" -ForegroundColor Yellow
+    Write-Host "1. Download Node.js dari: https://nodejs.org" -ForegroundColor White
+    Write-Host "2. Install Node.js dengan mengikuti wizard" -ForegroundColor White
+    Write-Host "3. Restart komputer" -ForegroundColor White
+    Write-Host "4. Jalankan script ini lagi" -ForegroundColor White
+    Write-Host ""
     Read-Host "Tekan Enter untuk keluar"
     exit 1
 }
@@ -284,9 +438,22 @@ Write-Host ""
 
 # Install dependencies
 if (-not (Install-Dependencies)) {
-    Write-Host "Instalasi dependencies gagal." -ForegroundColor Red
-    Read-Host "Tekan Enter untuk keluar"
-    exit 1
+    Write-Host ""
+    Write-Host "========================================================" -ForegroundColor Red
+    Write-Host "              INSTALASI DEPENDENCIES GAGAL!" -ForegroundColor Red
+    Write-Host "========================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "SOLUSI MANUAL:" -ForegroundColor Yellow
+    Write-Host "1. Buka Command Prompt sebagai Administrator" -ForegroundColor White
+    Write-Host "2. Jalankan perintah: cd /d `"$InstallPath`"" -ForegroundColor White
+    Write-Host "3. Jalankan perintah: npm install --production" -ForegroundColor White
+    Write-Host "4. Setelah selesai, jalankan script ini lagi" -ForegroundColor White
+    Write-Host ""
+    $response = Read-Host "Apakah Anda ingin melanjutkan instalasi tanpa dependencies? (Y/N)"
+    if ($response -ne 'Y') {
+        exit 1
+    }
+    Write-Host "[!] Melanjutkan instalasi tanpa dependencies..." -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -323,16 +490,18 @@ Write-Host "Aplikasi JS Carwash V2 berhasil diinstall di:" -ForegroundColor Cyan
 Write-Host $InstallPath -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Shortcuts telah dibuat di Desktop:" -ForegroundColor Cyan
+Write-Host "- JS Carwash - Install Dependencies (install dependencies manual)" -ForegroundColor White
 Write-Host "- JS Carwash - Start Server (untuk menjalankan server)" -ForegroundColor White
 Write-Host "- JS Carwash - Stop Server (untuk menghentikan server)" -ForegroundColor White
 Write-Host "- JS Carwash - Display Antrian (untuk membuka display)" -ForegroundColor White
 Write-Host "- JS Carwash - Admin Panel (untuk mengelola antrian)" -ForegroundColor White
 Write-Host ""
 Write-Host "CARA MENGGUNAKAN:" -ForegroundColor Cyan
-Write-Host "1. Klik 'JS Carwash - Start Server' untuk menjalankan aplikasi" -ForegroundColor White
-Write-Host "2. Tunggu hingga server berjalan" -ForegroundColor White
-Write-Host "3. Klik 'JS Carwash - Display Antrian' untuk membuka display" -ForegroundColor White
-Write-Host "4. Klik 'JS Carwash - Admin Panel' untuk mengelola antrian" -ForegroundColor White
+Write-Host "1. Jika ada masalah dependencies, klik 'JS Carwash - Install Dependencies' terlebih dahulu" -ForegroundColor White
+Write-Host "2. Klik 'JS Carwash - Start Server' untuk menjalankan aplikasi" -ForegroundColor White
+Write-Host "3. Tunggu hingga server berjalan" -ForegroundColor White
+Write-Host "4. Klik 'JS Carwash - Display Antrian' untuk membuka display" -ForegroundColor White
+Write-Host "5. Klik 'JS Carwash - Admin Panel' untuk mengelola antrian" -ForegroundColor White
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host ""

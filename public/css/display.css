@@ -188,15 +188,14 @@ body {
     flex-direction: column;
     gap: 8px;
     padding: 8px;
+    max-height: calc(3 * (40px + 8px) + 16px); /* 3 items × (item height + gap) + padding */
+    overflow-y: auto;
 }
 
 .detailing-grid .queue-item {
     flex: 0 0 auto;
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-}
-
-/* Remove limit for detailing queue - let it scroll */
-.detailing-grid .queue-item {
+    min-height: 40px;
     display: flex;
 }
 

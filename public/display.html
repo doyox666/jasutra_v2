@@ -16,7 +16,7 @@
     
     <div class="header">
         <div class="header-left">
-            <img src="logo.png" alt="JS Carwash Logo" class="logo">
+            <img src="./images/logo.png" alt="JS Carwash Logo" class="logo">
             <div class="header-title">
                 <div class="welcome-text">JASUTRA CARWASH</div>
                 <div class="address">Jl. Raya Perumnas No.235, Sukaluyu, Telukjambe Timur, Karawang, Jawa Barat 41361</div>
@@ -162,7 +162,13 @@
                 }
             });
 
-            // Process detailing queues without limit
+            // Process detailing queues with 3 item limit per column
+            const detailingColumns = {
+                'detailing-waiting': 0,
+                'detailing-process': 0,
+                'detailing-completed': 0
+            };
+            
             data.detailing.forEach(vehicle => {
                 let targetId;
                 switch(vehicle.status) {
@@ -176,8 +182,9 @@
                         targetId = 'detailing-completed';
                         break;
                 }
-                if (targetId) {
+                if (targetId && detailingColumns[targetId] < 3) {
                     addQueueItem(targetId, vehicle, 'detailing');
+                    detailingColumns[targetId]++;
                 }
             });
             
