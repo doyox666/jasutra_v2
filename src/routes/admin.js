@@ -111,10 +111,13 @@ module.exports = (io) => {
           const { getNextQueueNumber } = require('../database');
           const newQueueNumber = await getNextQueueNumber('detailing');
           
+          // Gunakan waktu Indonesia eksplisit untuk konsistensi
+          const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' });
+          
           // Update vehicle to detailing service with new queue number and reset status to waiting
           db.run(
-            `UPDATE vehicles SET service_type = ?, queue_number = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-            ['detailing', newQueueNumber, 'waiting', id],
+            `UPDATE vehicles SET service_type = ?, queue_number = ?, status = ?, updated_at = ? WHERE id = ?`,
+            ['detailing', newQueueNumber, 'waiting', now, id],
             function(updateErr) {
               if (updateErr) {
                 res.status(500).json({ error: updateErr.message });

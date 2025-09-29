@@ -76,10 +76,13 @@ module.exports = (io) => {
       const queue_number = await getNextQueueNumber(service_type);
       const status = 'waiting';
       
+      // Gunakan waktu Indonesia eksplisit untuk konsistensi
+      const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' });
+      
       db.run(
-        `INSERT INTO vehicles (queue_number, plate_number, service_type, status) 
-         VALUES (?, ?, ?, ?)`,
-        [queue_number, plate_number.toUpperCase(), service_type, status],
+        `INSERT INTO vehicles (queue_number, plate_number, service_type, status, created_at, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [queue_number, plate_number.toUpperCase(), service_type, status, now, now],
         function(err) {
           if (err) {
             res.status(500).json({ error: err.message });
@@ -125,11 +128,15 @@ module.exports = (io) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    let query = `UPDATE vehicles SET status = ?, updated_at = CURRENT_TIMESTAMP`;
-    let params = [status];
+    // Gunakan waktu Indonesia eksplisit untuk konsistensi
+    const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' });
+    
+    let query = `UPDATE vehicles SET status = ?, updated_at = ?`;
+    let params = [status, now];
     
     if (status === 'completed') {
-      query += `, completed_at = CURRENT_TIMESTAMP`;
+      query += `, completed_at = ?`;
+      params.push(now);
     }
     
     query += ` WHERE id = ?`;
