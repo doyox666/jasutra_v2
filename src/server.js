@@ -10,6 +10,9 @@ const queueRoutes = require('./routes/queue');
 const adminRoutes = require('./routes/admin');
 const reportRoutes = require('./routes/report');
 
+// Set timezone ke Asia/Jakarta untuk konsistensi waktu
+process.env.TZ = 'Asia/Jakarta';
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {

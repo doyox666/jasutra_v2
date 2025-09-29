@@ -535,3 +535,34 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Timestamp Styling */
+.timestamp {
+    font-family: 'Courier New', monospace;
+    color: #666;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.timestamp-accurate {
+    color: #28a745;
+    position: relative;
+}
+
+.timestamp-accurate::after {
+    content: "📅";
+    margin-left: 4px;
+    font-size: 0.8em;
+}
+
+/* Table timestamp styling */
+table .timestamp {
+    white-space: nowrap;
+    min-width: 140px;
+}
+
+/* Tooltip for timestamp */
+.timestamp[title] {
+    cursor: help;
+    border-bottom: 1px dotted #999;
+}
