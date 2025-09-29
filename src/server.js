@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
+const compression = require('compression');
 const { Server } = require('socket.io');
 const database = require('./database');
 const queueRoutes = require('./routes/queue');
@@ -15,14 +16,42 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"]
-  }
+  },
+  // Optimize Socket.IO for Smart TV
+  transports: ['websocket', 'polling'],
+  pingTimeout: 10000,
+  pingInterval: 5000
 });
 
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '../public')));
+// Enable compression for better Smart TV performance
+app.use(compression({
+  threshold: 1024, // Only compress if response is larger than 1KB
+  level: 6, // Compression level (1-9, 6 is good balance)
+  filter: (req, res) => {
+    // Don't compress already compressed files
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
+
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"]
+}));
+
+app.use(bodyParser.json({ limit: '10mb' }));
+
+// Smart TV optimized static file serving
+app.use(express.static(path.join(__dirname, '../public'), {
+  maxAge: '1h', // Cache static files
+  etag: true,
+  lastModified: true
+}));
 
 app.use('/api/queue', queueRoutes(io));
 app.use('/api/admin', adminRoutes(io));

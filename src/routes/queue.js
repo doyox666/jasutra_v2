@@ -5,8 +5,29 @@ const { logActivity } = require('../utils/activity');
 module.exports = (io) => {
   const router = express.Router();
 
-  // Get all active queues
+  // In-memory cache for active queues (for Smart TV optimization)
+  let queueCache = {
+    data: null,
+    lastUpdate: 0,
+    duration: 3000 // 3 seconds cache
+  };
+
+  // Clear cache when queue is updated
+  function clearQueueCache() {
+    queueCache.data = null;
+    queueCache.lastUpdate = 0;
+  }
+
+  // Get all active queues with caching
   router.get('/active', (req, res) => {
+    const now = Date.now();
+    
+    // Return cached data if available and not expired
+    if (queueCache.data && (now - queueCache.lastUpdate) < queueCache.duration) {
+      console.log('Serving cached queue data');
+      return res.json(queueCache.data);
+    }
+    
     const query = `
       SELECT * FROM vehicles 
       WHERE DATE(created_at) = DATE('now')
@@ -20,11 +41,25 @@ module.exports = (io) => {
     
     db.all(query, [], (err, rows) => {
       if (err) {
+        console.error('Database error in /active:', err);
         res.status(500).json({ error: err.message });
       } else {
         const cuciQueues = rows.filter(v => v.service_type === 'cuci');
         const detailingQueues = rows.filter(v => v.service_type === 'detailing');
-        res.json({ cuci: cuciQueues, detailing: detailingQueues });
+        const result = { cuci: cuciQueues, detailing: detailingQueues };
+        
+        // Update cache
+        queueCache.data = result;
+        queueCache.lastUpdate = now;
+        
+        // Add performance headers for Smart TV
+        res.set({
+          'Cache-Control': 'public, max-age=3',
+          'X-Cache-Status': 'MISS',
+          'X-Queue-Count': rows.length.toString()
+        });
+        
+        res.json(result);
       }
     });
   });
@@ -59,6 +94,9 @@ module.exports = (io) => {
               if (err) {
                 res.status(500).json({ error: err.message });
               } else {
+                // Clear cache when new vehicle registered
+                clearQueueCache();
+                
                 // Emit socket event for real-time update
                 io.emit('queueUpdate', { action: 'registered', vehicle });
                 
@@ -109,6 +147,9 @@ module.exports = (io) => {
           if (err) {
             res.status(500).json({ error: err.message });
           } else {
+            // Clear cache when status updated
+            clearQueueCache();
+            
             // Emit socket event
             io.emit('queueUpdate', { action: 'statusChanged', vehicle });
             
